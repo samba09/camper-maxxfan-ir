@@ -200,6 +200,9 @@ sensor:
       - median:
           window_size: 3
           send_every: 1
+      # Only report changes, so the log isn't flooded every 0.5 s. Small
+      # enough that a slider move of 1 % still gets through.
+      - delta: 0.5
     on_value:
       - lambda: |-
           // 0-2 % = off, then every started 10 % is one speed step. The
