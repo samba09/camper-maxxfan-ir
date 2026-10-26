@@ -28,6 +28,9 @@ esp32:
 
 logger:
   level: DEBUG
+  logs:
+    # The duty cycle sensor logs every reading (each 0.5 s) before filtering
+    duty_cycle: INFO
 
 ota:
   - platform: esphome
