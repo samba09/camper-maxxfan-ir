@@ -1,0 +1,259 @@
+substitutions:
+  name: maxxfan
+  friendly_name: MaxxFan
+
+  # IR LED: GPIO13 -> 100 ohm -> LED anode, cathode -> GND
+  ir_led_pin: GPIO13
+  # Revotion NODE Ambient MultiWhite zone (plus-side PWM, shared GND):
+  # zone out -> 3.3k -> GPIO, GPIO -> 1k -> GND (12 V -> 2.75 V, 14.4 V -> 3.3 V)
+  revotion_pin: GPIO26
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+
+# Sleeps once the fan is off and the zone has been at 0 % for 30 min. The
+# first PWM pulse on the Revotion zone wakes the ESP again; about 1 s later
+# the fan has its command. Zone at 1-2 % keeps the ESP awake with the fan off.
+deep_sleep:
+  id: deep_sleep_ctrl
+  wakeup_pin:
+    number: ${revotion_pin}
+    allow_other_uses: true
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+logger:
+  level: DEBUG
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+  # Firmware update from the web page: upload maxxfan.ota.bin
+  - platform: web_server
+
+# Only its own hotspot, whenever the ESP is awake. The web page at
+# http://192.168.4.1/ works as a remote and shows the logs.
+wifi:
+  ap:
+    ssid: "MaxxFan"
+    password: !secret fallback_password
+
+# Phones open the web page by themselves after joining the hotspot
+captive_redirect:
+
+web_server:
+  version: 3
+  local: true
+
+external_components:
+  - source: github://brown-studios/esphome-maxxfan-protocol@main
+    components: [maxxfan_protocol]
+  - source:
+      type: local
+      path: components
+    components: [captive_redirect]
+
+maxxfan_protocol:
+
+remote_transmitter:
+  - id: ir_transmitter
+    pin:
+      number: ${ir_led_pin}
+      inverted: false
+    carrier_duty_percent: 50%
+    non_blocking: true
+
+# The fan never answers, so these entities hold the state the ESP last sent.
+# Every change sends the complete state, like the original remote does.
+fan:
+  - id: maxxfan
+    name: "Fan"
+    platform: template
+    speed_count: 10
+    restore_mode: ALWAYS_OFF
+    on_turn_on:
+      - cover.open: maxxfan_cover
+    on_turn_off:
+      - cover.close: maxxfan_cover
+    on_state:
+      - script.execute: transmit_state
+
+cover:
+  # Fan on with the cover closed is the "ceiling fan" mode
+  - id: maxxfan_cover
+    name: "Cover"
+    platform: template
+    optimistic: true
+    assumed_state: true
+    restore_mode: NO_RESTORE
+    on_opened:
+      - script.execute: transmit_state
+    on_closed:
+      - script.execute: transmit_state
+
+select:
+  # Separate entity because the web page's fan control has no direction
+  - id: maxxfan_direction
+    name: "Direction"
+    platform: template
+    optimistic: true
+    restore_value: true
+    options:
+      - Exhaust
+      - Intake
+    on_value:
+      - script.execute: transmit_state
+  - id: maxxfan_mode
+    name: "Mode"
+    platform: template
+    optimistic: true
+    restore_value: false
+    options:
+      - Manual
+      - Auto
+    on_value:
+      - script.execute: transmit_state
+
+number:
+  # The fan's own thermostat (auto mode). The fan works in Fahrenheit
+  # (29-99 F), so this is converted before sending.
+  - id: maxxfan_auto_temperature
+    name: "Auto temperature"
+    platform: template
+    unit_of_measurement: "°C"
+    device_class: temperature
+    min_value: -1
+    max_value: 37
+    step: 0.5
+    mode: box
+    optimistic: true
+    initial_value: 24
+    restore_value: true
+    on_value:
+      - script.execute: transmit_state
+
+button:
+  # Sends the current state again, e.g. after the fan was used with its own
+  # remote or buttons
+  - id: maxxfan_retransmit
+    name: "Send again"
+    platform: template
+    on_press:
+      - script.execute: transmit_state
+  # Makes the fan beep twice: handy to test IR range without moving anything
+  - id: maxxfan_beep
+    name: "Beep"
+    platform: template
+    on_press:
+      - script.execute:
+          id: transmit
+          warn: true
+
+globals:
+  # Speed step (0 = off, 1-10) last taken from the Revotion channel, so the
+  # fan only follows the Revotion slider when it actually moves. Changes from
+  # the web page stay until the slider is moved again.
+  - id: revotion_step
+    type: int
+    initial_value: "-1"
+  # Last IR message (or start), for the sleep timeout
+  - id: last_activity
+    type: uint32_t
+    initial_value: "0"
+
+interval:
+  - interval: 10s
+    then:
+      - if:
+          condition:
+            lambda: |-
+              // Zone at exactly 0 % means no pulses, so nothing would wake
+              // the ESP by mistake; 1-2 % keeps it awake with the fan off
+              bool idle = !id(maxxfan).state && id(revotion_level).state < 0.5f;
+              return idle && millis() - id(last_activity) > 30 * 60 * 1000UL;
+          then:
+            - logger.log: "Fan off and zone at zero for 30 min, going to deep sleep"
+            - deep_sleep.enter: deep_sleep_ctrl
+
+sensor:
+  # Dim level of the MultiWhite zone, measured as PWM duty cycle. The
+  # divider turns the 12-14.4 V pulses into about 2.75-3.3 V.
+  - id: revotion_level
+    name: "Revotion level"
+    platform: duty_cycle
+    pin:
+      number: ${revotion_pin}
+      allow_other_uses: true
+      # Keeps an unconnected input at 0 % (off) instead of floating; next to
+      # the 1k it shifts the divider by less than 2 %
+      mode:
+        input: true
+        pulldown: true
+    update_interval: 500ms
+    accuracy_decimals: 0
+    filters:
+      # Ignores single bad readings while the slider moves
+      - median:
+          window_size: 3
+          send_every: 1
+    on_value:
+      - lambda: |-
+          // 0-2 % = off, then every started 10 % is one speed step
+          int step = x < 3.0f ? 0 : std::min(10, std::max(1, (int) ceilf(x / 10.0f)));
+          if (step == id(revotion_step))
+            return;
+          bool first = id(revotion_step) < 0;
+          id(revotion_step) = step;
+          // After a reboot only follow the channel when it is on, so a
+          // dark channel doesn't switch off a fan started from the web page
+          if (first && step == 0)
+            return;
+          ESP_LOGI("revotion", "Level %.0f %% -> speed step %d", x, step);
+          if (step == 0) {
+            id(maxxfan).turn_off().perform();
+          } else {
+            id(maxxfan).turn_on().set_speed(step).perform();
+          }
+
+script:
+  # Turning the fan on also opens the cover, which fires several changes at
+  # once; the short delay merges them into one IR message
+  - id: transmit_state
+    mode: restart
+    then:
+      - delay: 150ms
+      - script.execute:
+          id: transmit
+          warn: false
+  - id: transmit
+    parameters:
+      warn: bool
+    then:
+      - lambda: id(last_activity) = millis();
+      - logger.log:
+          format: "Sending to MaxxFan: on=%d speed=%d0 exhaust=%d cover=%d auto=%d"
+          args:
+            - id(maxxfan).state
+            - id(maxxfan).speed
+            - id(maxxfan_direction).active_index().value_or(0) == 0
+            - id(maxxfan_cover).position == COVER_OPEN
+            - id(maxxfan_mode).active_index().value_or(0) == 1
+      - remote_transmitter.transmit_maxxfan:
+          transmitter_id: ir_transmitter
+          fan_on: !lambda return id(maxxfan).state;
+          fan_exhaust: !lambda return id(maxxfan_direction).active_index().value_or(0) == 0;
+          fan_speed: !lambda return std::max(1, id(maxxfan).speed) * 10;
+          cover_open: !lambda return id(maxxfan_cover).position == COVER_OPEN;
+          auto_mode: !lambda return id(maxxfan_mode).active_index().value_or(0) == 1;
+          auto_temperature: !lambda |-
+            int f = (int) lroundf(id(maxxfan_auto_temperature).state * 9.0f / 5.0f + 32.0f);
+            return std::min(99, std::max(29, f));
+          special: !lambda |-
+            bool is_auto = id(maxxfan_mode).active_index().value_or(0) == 1;
+            bool ceiling_fan = id(maxxfan).state && id(maxxfan_cover).position == COVER_CLOSED;
+            return is_auto || ceiling_fan;
+          warn: !lambda return warn;

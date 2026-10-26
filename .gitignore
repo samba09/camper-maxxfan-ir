@@ -1,0 +1,6 @@
+# ESPHome build output and local secrets
+/.esphome/
+/secrets.yaml
+# Built images go into GitHub releases, not into git
+/firmware/
+__pycache__/

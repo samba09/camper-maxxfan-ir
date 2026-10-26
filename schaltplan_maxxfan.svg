@@ -1,0 +1,177 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="820" viewBox="0 0 1200 820" font-family="Helvetica, Arial, sans-serif" font-size="13">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#c0392b"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="820" fill="#ffffff"/>
+
+  <!-- Title -->
+  <text x="40" y="38" font-size="22" font-weight="bold">MaxxFan IR controller (ESP32)</text>
+  <text x="40" y="60" fill="#555">Revotion MultiWhite zone level → fan speed · IR LED → MaxxFan · hotspot "MaxxFan" · deep sleep, wakes on zone PWM</text>
+
+  <g stroke="#000" stroke-width="2" fill="none">
+    <!-- +12 V rail -->
+    <line x1="80" y1="110" x2="320" y2="110"/>
+    <!-- GND rail -->
+    <line x1="80" y1="700" x2="1160" y2="700"/>
+
+    <!-- Battery: +12 V top, GND bottom -->
+    <line x1="80" y1="110" x2="80" y2="380"/>
+    <line x1="60" y1="380" x2="100" y2="380"/>
+    <line x1="70" y1="392" x2="90" y2="392" stroke-width="4"/>
+    <line x1="60" y1="404" x2="100" y2="404"/>
+    <line x1="70" y1="416" x2="90" y2="416" stroke-width="4"/>
+    <line x1="80" y1="416" x2="80" y2="700"/>
+
+    <!-- Fuse F1 on +12 V -->
+    <rect x="130" y="100" width="50" height="20" fill="#fff"/>
+    <line x1="130" y1="110" x2="180" y2="110"/>
+
+    <!-- Buck converter -->
+    <line x1="320" y1="110" x2="320" y2="150"/>
+    <rect x="290" y="150" width="150" height="100" fill="#fff"/>
+    <line x1="320" y1="250" x2="320" y2="700"/>
+    <line x1="440" y1="180" x2="660" y2="180"/>
+
+    <!-- Revotion MultiWhite (existing) -->
+    <rect x="340" y="420" width="170" height="110" fill="#fff" stroke-dasharray="6 4"/>
+    <line x1="510" y1="470" x2="525" y2="470"/>
+    <line x1="420" y1="530" x2="420" y2="700"/>
+
+    <!-- R2 3.3k horizontal -->
+    <rect x="525" y="460" width="60" height="20" fill="#fff"/>
+    <line x1="585" y1="470" x2="660" y2="470"/>
+
+    <!-- R3 1k vertical to GND -->
+    <line x1="610" y1="470" x2="610" y2="530"/>
+    <rect x="600" y="530" width="20" height="60" fill="#fff"/>
+    <line x1="610" y1="590" x2="610" y2="700"/>
+
+    <!-- ESP32 board -->
+    <rect x="660" y="140" width="210" height="500" fill="#f4f8fc" stroke-width="2.5"/>
+    <!-- ESP GND (left) -->
+    <line x1="640" y1="610" x2="660" y2="610"/>
+    <line x1="640" y1="610" x2="640" y2="700"/>
+
+    <!-- IR branch: GPIO13 -> R1 -> LED -> GND -->
+    <line x1="870" y1="200" x2="920" y2="200"/>
+    <rect x="920" y="190" width="60" height="20" fill="#fff"/>
+    <line x1="980" y1="200" x2="1160" y2="200"/>
+    <line x1="1160" y1="200" x2="1160" y2="250"/>
+    <!-- LED (anode top, cathode bottom) -->
+    <path d="M1142,250 L1178,250 L1160,282 Z" fill="#fff"/>
+    <line x1="1142" y1="282" x2="1178" y2="282"/>
+    <line x1="1160" y1="282" x2="1160" y2="700"/>
+    <!-- ESP GND (right) -->
+    <line x1="870" y1="610" x2="900" y2="610"/>
+    <line x1="900" y1="610" x2="900" y2="700"/>
+  </g>
+
+  <!-- LED emission arrows -->
+  <g stroke="#c0392b" stroke-width="2" fill="none">
+    <line x1="1138" y1="260" x2="1116" y2="248" marker-end="url(#arr)"/>
+    <line x1="1138" y1="274" x2="1116" y2="262" marker-end="url(#arr)"/>
+  </g>
+
+  <!-- Junction dots -->
+  <g fill="#000">
+    <circle cx="80" cy="110" r="4"/>
+    <circle cx="320" cy="700" r="4"/>
+    <circle cx="420" cy="700" r="4"/>
+    <circle cx="610" cy="470" r="4"/>
+    <circle cx="610" cy="700" r="4"/>
+    <circle cx="640" cy="700" r="4"/>
+    <circle cx="900" cy="700" r="4"/>
+    <circle cx="80" cy="700" r="4"/>
+  </g>
+
+  <!-- Optional / later (dashed, grey) -->
+  <g stroke="#888" stroke-width="1.5" fill="none" stroke-dasharray="5 4">
+    <rect x="950" y="360" width="180" height="80" fill="#fafafa"/>
+    <line x1="870" y1="400" x2="950" y2="400"/>
+    <rect x="950" y="490" width="180" height="80" fill="#fafafa"/>
+    <line x1="870" y1="530" x2="950" y2="530"/>
+    <!-- 4.7k pull-up -->
+    <line x1="920" y1="530" x2="920" y2="500"/>
+    <rect x="912" y="460" width="16" height="40" fill="#fff"/>
+    <line x1="920" y1="460" x2="920" y2="450"/>
+  </g>
+
+  <!-- Labels -->
+  <g fill="#000">
+    <text x="104" y="398">Camper battery</text>
+    <text x="104" y="414" fill="#555">12–14.6 V, or the fan's</text>
+    <text x="104" y="430" fill="#555">own 12 V feed (must be</text>
+    <text x="104" y="446" fill="#555">permanently live)</text>
+    <text x="96" y="100" font-weight="bold">+12 V</text>
+    <text x="1100" y="692" font-weight="bold">GND</text>
+
+    <text x="134" y="90" font-weight="bold">F1</text>
+    <text x="134" y="140" fill="#555">2 A blade fuse</text>
+
+    <text x="300" y="175" font-weight="bold">Buck 12 V → 5 V</text>
+    <text x="300" y="194" fill="#555">≥1 A, input ≥24 V</text>
+    <text x="300" y="212" fill="#555">(MP1584 / LM2596</text>
+    <text x="300" y="228" fill="#555">or 12 V USB adapter)</text>
+    <text x="326" y="146" font-size="11">IN+</text>
+    <text x="326" y="264" font-size="11">IN− / OUT−</text>
+    <text x="446" y="172" font-size="11">OUT+ 5 V</text>
+
+    <text x="350" y="442" font-weight="bold">Revotion NODE Ambient</text>
+    <text x="350" y="460" font-weight="bold">MultiWhite</text>
+    <text x="350" y="480" fill="#555">existing installation,</text>
+    <text x="350" y="496" fill="#555">dims on the + side (PWM)</text>
+    <text x="350" y="514" fill="#555">"Fan" zone output (+) →</text>
+    <text x="426" y="548" font-size="11">GND</text>
+
+    <text x="522" y="452" font-weight="bold">R2 3.3 kΩ</text>
+    <text x="628" y="558" font-weight="bold">R3</text>
+    <text x="628" y="575" font-weight="bold">1 kΩ</text>
+    <text x="522" y="498" font-size="11" fill="#555">2.75–3.3 V</text>
+
+    <text x="700" y="166" font-size="16" font-weight="bold">ESP32 "ESP32S"</text>
+    <text x="700" y="184" fill="#555" font-size="11">esp32dev · ESPHome</text>
+
+    <!-- left pins -->
+        <text x="668" y="205" font-size="12">5V / VIN</text>
+    <text x="668" y="492" font-size="12">D26 (GPIO26)</text>
+    <text x="668" y="508" font-size="10" fill="#555">duty_cycle input +</text>
+    <text x="668" y="521" font-size="10" fill="#555">deep-sleep wake (ext0)</text>
+    <text x="668" y="632" font-size="12">GND</text>
+    <!-- right pins -->
+    <text x="862" y="225" font-size="12" text-anchor="end">D13 (GPIO13)</text>
+    <text x="862" y="241" font-size="10" fill="#555" text-anchor="end">IR transmitter</text>
+    <text x="862" y="424" font-size="12" text-anchor="end" fill="#777">D27 (GPIO27)</text>
+    <text x="862" y="554" font-size="12" text-anchor="end" fill="#777">D4 (GPIO4)</text>
+    <text x="862" y="632" font-size="12" text-anchor="end">GND</text>
+
+    <text x="926" y="182" font-weight="bold">R1 100 Ω*</text>
+    <text x="926" y="232" font-size="11" fill="#555">at the LED end, under heat-shrink,</text>
+    <text x="926" y="246" font-size="11" fill="#555">hidden behind the trim ring</text>
+    <text x="926" y="260" font-size="11" fill="#555">cable: 2 × 0.14 mm², along fan cable</text>
+    <text x="1150" y="304" font-weight="bold" text-anchor="end">IR LED</text>
+    <text x="1150" y="320" font-size="11" fill="#555" text-anchor="end">anode = small post (top)</text>
+    <text x="1150" y="334" font-size="11" fill="#555" text-anchor="end">in the trim ring, 1–3 cm from</text>
+    <text x="1150" y="348" font-size="11" fill="#555" text-anchor="end">the fan's IR window</text>
+
+    <text x="958" y="380" font-weight="bold" fill="#777">optional: IR receiver</text>
+    <text x="958" y="398" font-size="11" fill="#777">VS1838B / TSOP38238</text>
+    <text x="958" y="414" font-size="11" fill="#777">OUT → D27, VCC → 3V3,</text>
+    <text x="958" y="430" font-size="11" fill="#777">GND → GND</text>
+    <text x="958" y="510" font-weight="bold" fill="#777">later: DS18B20 probes</text>
+    <text x="958" y="528" font-size="11" fill="#777">yellow → D4, red → 3V3,</text>
+    <text x="958" y="544" font-size="11" fill="#777">black → GND</text>
+    <text x="934" y="476" font-size="11" fill="#777">4.7 kΩ</text>
+    <text x="900" y="446" font-size="11" fill="#777">3V3</text>
+  </g>
+
+  <!-- Notes -->
+  <g>
+    <rect x="40" y="725" width="1110" height="80" fill="#f7f7f7" stroke="#ccc"/>
+    <text x="56" y="748" font-weight="bold">Divider R2/R3 (no zener):</text>
+    <text x="56" y="767">ratio ≈ 0.23 (with internal pull-down ≈ 45 kΩ) → 11.5 V: 2.6 V · 12.0 V: 2.75 V · 14.4 V: 3.3 V · 15 V: 3.45 V.</text>
+    <text x="56" y="786">ESP32 reads ≥ 2.48 V as high (guaranteed) and tolerates ≤ 3.6 V. Load on the zone ≈ 3 mA. All grounds are shared (MultiWhite dims on the + side).</text>
+    <text x="56" y="800" font-size="11" fill="#555">* LED right at the receiver: if the fan reacts unreliably (receiver overloaded), use 470 Ω–1 kΩ. Never use D0–D3 / SD0–SD3 / CMD / CLK (flash pins GPIO6–11). Reversed IR LED polarity is harmless: check with a phone camera.</text>
+  </g>
+</svg>
