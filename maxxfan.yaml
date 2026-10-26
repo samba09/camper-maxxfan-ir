@@ -202,9 +202,19 @@ sensor:
           send_every: 1
     on_value:
       - lambda: |-
-          // 0-2 % = off, then every started 10 % is one speed step
-          int step = x < 3.0f ? 0 : std::min(10, std::max(1, (int) ceilf(x / 10.0f)));
-          if (step == id(revotion_step))
+          // 0-2 % = off, then every started 10 % is one speed step. The
+          // band edges sit between whole percent values (e.g. 30.5 %), so a
+          // slider resting on 30 % is not at an edge.
+          auto step_for = [](float v) {
+            return v < 2.5f ? 0 : std::min(10, std::max(1, (int) ceilf((v - 0.5f) / 10.0f)));
+          };
+          int step = step_for(x);
+          // Hysteresis: keep the old step until the level is 0.4 % past the
+          // edge, so measurement noise can't make the fan switch back and forth
+          int old = id(revotion_step);
+          if (old >= 0 && step != old && (step_for(x - 0.4f) == old || step_for(x + 0.4f) == old))
+            step = old;
+          if (step == old)
             return;
           bool first = id(revotion_step) < 0;
           id(revotion_step) = step;
