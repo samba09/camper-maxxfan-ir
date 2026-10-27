@@ -6,11 +6,13 @@ of a **Revotion NODE Ambient MultiWhite**, so the fan shows up in the Revotion
 app as a "light" whose brightness is the fan speed, with no extra app and no
 internet.
 
+[![Video: the MaxxFan following the Revotion slider](https://img.youtube.com/vi/Wqia9TBAQzE/hqdefault.jpg)](https://youtube.com/shorts/Wqia9TBAQzE)
+
+▶ [Watch the video on YouTube](https://youtube.com/shorts/Wqia9TBAQzE)
+
 ![Schematic](schaltplan_maxxfan.png)
 
-> **Status:** the firmware builds, but has not run on the real fan yet. The IR
-> range, the zone measurement, waking from deep sleep and the auto-opening
-> web page still need a hardware test.
+> **Status:** running on the real fan in the camper (see the video).
 
 ## How it works
 
