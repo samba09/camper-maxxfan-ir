@@ -68,7 +68,8 @@ The page also shows the logs and takes firmware updates (upload
 |---|---|---|
 | 1 | ESP32 dev board (ESP32-WROOM-32, `esp32dev`) | controller |
 | 1 | IR LED, 940 nm (5 mm) | sends to the fan |
-| 1 | 12 V → 5 V buck converter, ≥ 1 A, input ≥ 24 V (MP1584, LM2596 or a 12 V USB adapter) | power for the ESP32 |
+| 1 | [Pololu D36V6F3](https://www.pololu.com/product/3791), fixed 3.3 V, 600 mA, 4–50 V in, quiescent < 0.1 mA | power for the ESP32 |
+| 1 | capacitor 470 µF / 16 V (electrolytic) | buffers the Wi-Fi current peaks (C1) |
 | 1 | resistor 100 Ω (470 Ω–1 kΩ if the LED sits right at the receiver, see below) | IR LED current |
 | 1 | resistor 3.3 kΩ | divider top (R2) |
 | 1 | resistor 1 kΩ | divider bottom (R3) |
@@ -81,8 +82,9 @@ GPIO27 (to hear the original remote) and DS18B20 probes on GPIO4.
 ## Wiring
 
 ```
-Camper +12 V ── fuse 2 A ── buck IN+      buck OUT+ 5 V ── ESP32 5V/VIN
-Camper GND   ────────────── buck IN−/OUT− ──────────────── ESP32 GND
+Camper +12 V ── fuse 2 A ── Pololu VIN   Pololu VOUT 3.3 V ──┬── ESP32 3V3
+Camper GND   ────────────── Pololu GND ─────────────────────┼── ESP32 GND
+                                                     470 µF ┘ (+ to 3V3)
 
 MultiWhite "Fan" zone (+, PWM) ── 3.3 kΩ ──┬── GPIO26 (D26)
                                            └── 1 kΩ ── GND
@@ -90,6 +92,17 @@ MultiWhite "Fan" zone (+, PWM) ── 3.3 kΩ ──┬── GPIO26 (D26)
 GPIO13 (D13) ── 100 Ω ── IR LED anode   IR LED cathode ── GND
 ```
 
+- The Pololu's fixed 3.3 V goes straight to the **3V3** pin, not to 5V/VIN.
+  This leaves the board's own regulator (AMS1117) and USB chip (CH340)
+  unpowered, which is most of the sleep current. Measure 3.3 V once before
+  connecting the ESP32: the 3V3 pin has no protection.
+- Put C1 right at the 3V3 and GND pins. Wi-Fi draws short peaks of up to
+  about 400 mA; without it the voltage can dip low enough to reset the ESP32.
+- Remove the board's power LED (desolder it or cut its trace). It would
+  otherwise draw 1–2 mA all the time.
+- **Never plug in USB while 12 V is connected.** USB then powers the 3.3 V
+  rail through the AMS1117, against the Pololu. Disconnect 12 V for the
+  first flash; later updates go over the hotspot.
 - All grounds are shared. The MultiWhite dims on the plus side, so its zone
   output is a switched +12 V against the common camper ground.
 - With the ESP32's internal pull-down (about 45 kΩ) in parallel to R3, the
@@ -118,7 +131,7 @@ At such a short distance the receiver can be overloaded. If the fan reacts
 only sometimes, use 470 Ω–1 kΩ instead of 100 Ω. Reversed LED polarity is
 harmless: a phone camera shows the LED flicker when you press "Beep".
 
-The ESP32 and the buck converter can sit in the ceiling cavity next to the
+The ESP32 and the regulator can sit in the ceiling cavity next to the
 fan, powered from the fan's 12 V feed if that feed is permanently live. Then
 only one thin signal wire runs from the MultiWhite.
 
@@ -136,10 +149,11 @@ Measured at the 12 V battery, estimated:
 | State | Current | Per day |
 |---|---|---|
 | awake, hotspot on | ~40 mA | ~1 Ah |
-| deep sleep (dev board regulator, power LED, buck) | 3–5 mA | ~0.1 Ah |
+| deep sleep (Pololu, ESP32, power LED removed) | ~0.1–0.2 mA | < 0.005 Ah |
 
-Removing the dev board's power LED saves another 1–2 mA in sleep. While the
-fan runs it draws 0.2–3 A itself, so the ESP32's share does not matter then.
+With a 5 V buck on 5V/VIN instead, the board's regulator and USB chip stay
+powered and deep sleep takes 3–10 mA. While the fan runs it draws 0.2–3 A
+itself, so the ESP32's share does not matter then.
 
 ## Building and flashing
 
@@ -155,7 +169,7 @@ fan runs it draws 0.2–3 A itself, so the ESP32's share does not matter then.
    ```
    The images are in `.esphome/build/maxxfan/build/` (`firmware.factory.bin`,
    `firmware.ota.bin`).
-4. First flash over USB, e.g. with `esphome run maxxfan.yaml`, or from Chrome
+4. First flash over USB, with the 12 V supply disconnected, e.g. with `esphome run maxxfan.yaml`, or from Chrome
    or Edge on [ESPHome Web](https://web.esphome.io/) with `firmware.factory.bin`.
 5. Later updates: join the `MaxxFan` hotspot, open `http://192.168.4.1/` and
    upload `firmware.ota.bin`. The ESP32 must be awake: set the zone to 1–2 %.
