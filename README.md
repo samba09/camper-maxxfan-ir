@@ -210,6 +210,7 @@ whether to stay connected.
   (MIT), the MaxxFan IR protocol for ESPHome
 - [skypeachblue/maxxfan-reversing](https://github.com/skypeachblue/maxxfan-reversing),
   the reverse engineering of the protocol
+- Firmware and docs written with help from Claude (Anthropic)
 
 MaxxAir and MaxxFan are trademarks of Airxcel; Revotion, NODE and BRAIN are
 trademarks of REVOTION GmbH. This project is not affiliated with either.
